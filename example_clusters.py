@@ -43,7 +43,8 @@ visualize_scatterplot(scattered_points, orig_filename)
 
 # Run clustering script with scattered_points
 clustered_filename = "nine_points_clustered.png"
-cluster_points(scattered_points, clustered_filename)
+cluster_points(scattered_points, clustered_filename, 'pegasus')         # Specify which QPU architecture you want to use
+                                                                        # Options: 'pegasus' or 'chimera'
 
 print("Your plots are saved to '{}' and '{}'.".format(orig_filename,
                                                  clustered_filename))

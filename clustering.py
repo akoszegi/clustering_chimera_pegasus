@@ -49,7 +49,7 @@ def get_max_distance(coordinates):
     return max_distance
 
 
-def cluster_points(scattered_points, filename):
+def cluster_points(scattered_points, filename, architecture):
     # Set up problem
     # Note: max_distance gets used in division later on. Hence, the max(.., 1)
     #   is used to prevent a division by zero
@@ -97,9 +97,27 @@ def cluster_points(scattered_points, filename):
             bqm.add_interaction(coord0.g, coord1.b, weight)
 
     # Submit problem to D-Wave sampler
-    sampler = EmbeddingComposite(DWaveSampler(solver={'qpu': True}))
-    sampleset = sampler.sample(bqm, chain_strength=4, num_reads=1000)
+    if architecture == 'pegasus':
+        solver = DWaveSampler(solver={'topology__type': 'pegasus', 'qpu': True})
+        print(solver.solver)
+
+        sampler = EmbeddingComposite(solver)
+    else:
+        solver = DWaveSampler(solver={'topology__type': 'chimera', 'qpu': True})
+        print(solver.solver)
+        
+        sampler = EmbeddingComposite(solver)
+
+    sampleset = sampler.sample(bqm, chain_strength=4, num_reads=1000, return_embedding=True)
     best_sample = sampleset.first.sample
+
+    # Inspect the embedding
+    embedding = sampleset.info['embedding_context']['embedding']
+    num_qubits = 0
+
+    for k in embedding.values():
+        num_qubits += len(k)
+    print("Number of qubits used in embedding = " + str(num_qubits))
 
     # Visualize graph problem
     dwave.inspector.show(bqm, sampleset)
@@ -111,6 +129,7 @@ def cluster_points(scattered_points, filename):
     # Print solution onto terminal
     # Note: This is simply a more compact version of 'best_sample'
     print(groupings)
+    # print(best_sample)
 
 
 if __name__ == "__main__":
@@ -124,7 +143,7 @@ if __name__ == "__main__":
     # Find clusters
     # Note: the key part of this demo is in the construction of this function
     clustered_filename = "four_points_clustered.png"
-    cluster_points(scattered_points, clustered_filename)
+    cluster_points(scattered_points, clustered_filename, chimera)
 
     print("Your plots are saved to '{}' and '{}'.".format(orig_filename,
                                                      clustered_filename))
